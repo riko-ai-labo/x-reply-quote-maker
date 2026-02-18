@@ -64,8 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const systemPromptInput = getElement('system-prompt');
     const saveSettingsBtn = getElement('save-settings');
     const toggleApiVisibilityBtn = getElement('toggle-api-visibility');
-    const footerModel = getElement('footer-model');
-
     const postUrlInput = getElement('post-url');
     const fetchBtn = getElement('fetch-btn');
     const fetchError = getElement('fetch-error');
@@ -95,16 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (model && geminiModelSelect) geminiModelSelect.value = model;
         if (prompt && systemPromptInput) systemPromptInput.value = prompt;
 
-        updateFooterModel();
     }
 
     loadSettings();
-
-    function updateFooterModel() {
-        if (!footerModel || !geminiModelSelect) return;
-        const selectedOption = geminiModelSelect.options[geminiModelSelect.selectedIndex];
-        footerModel.textContent = selectedOption.text.split('（')[0].trim();
-    }
 
     // Toggle Settings Panel
     if (settingsToggle) {
@@ -151,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('geminiModel', model);
             localStorage.setItem('systemPrompt', prompt);
 
-            updateFooterModel();
             showSuccess('設定を保存しました');
             if (settingsPanel) settingsPanel.classList.add('hidden');
         });

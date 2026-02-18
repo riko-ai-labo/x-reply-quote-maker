@@ -4,28 +4,47 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
+    // Helper to get element safely
+    const getElement = (id) => document.getElementById(id);
+
     // PWA: Install Prompt
     let deferredPrompt = null;
     const installOverlay = getElement('install-overlay');
     const installOkBtn = getElement('install-ok');
     const installCancelBtn = getElement('install-cancel');
+    const installDesc = document.querySelector('.install-desc');
+
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 
     window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        // Show custom prompt if not dismissed before
-        if (!localStorage.getItem('installDismissed')) {
-            if (installOverlay) installOverlay.classList.remove('hidden');
-        }
     });
+
+    // Show install prompt after short delay (if not already installed/dismissed)
+    if (!isStandalone && !localStorage.getItem('installDismissed')) {
+        setTimeout(() => {
+            if (isIos) {
+                // iOS: show manual instructions
+                if (installDesc) installDesc.innerHTML = 'Safari の <strong>共有ボタン</strong>（□↑）→<br><strong>「ホーム画面に追加」</strong> をタップしてください';
+                if (installOkBtn) installOkBtn.textContent = 'OK';
+            }
+            if (installOverlay) installOverlay.classList.remove('hidden');
+        }, 1500);
+    }
 
     if (installOkBtn) {
         installOkBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            if (installOverlay) installOverlay.classList.add('hidden');
-            deferredPrompt.prompt();
-            await deferredPrompt.userChoice;
-            deferredPrompt = null;
+            if (deferredPrompt) {
+                if (installOverlay) installOverlay.classList.add('hidden');
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else {
+                // iOS or no prompt available - just close
+                if (installOverlay) installOverlay.classList.add('hidden');
+            }
         });
     }
 
@@ -35,9 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('installDismissed', 'true');
         });
     }
-
-    // Helper to get element safely
-    const getElement = (id) => document.getElementById(id);
 
     // Elements
     const settingsToggle = getElement('settings-toggle');

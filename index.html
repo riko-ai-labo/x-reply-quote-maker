@@ -76,6 +76,18 @@
     </div>
 
     <main id="main-content">
+      <div class="card url-card">
+        <label for="post-url" class="card-label">XのURLから読み込み</label>
+        <div class="url-input-row">
+          <input type="url" id="post-url" placeholder="https://x.com/... のURLを貼り付け" spellcheck="false" autocomplete="off">
+          <button id="fetch-btn" class="btn primary small" disabled>
+            <span class="text">読み込む</span>
+            <div class="loader hidden"></div>
+          </button>
+        </div>
+        <div id="fetch-error" class="fetch-error hidden"></div>
+      </div>
+
       <div class="card target-post-card">
         <label for="target-text" class="card-label">ポストの内容</label>
         <textarea id="target-text" rows="4"

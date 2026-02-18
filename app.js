@@ -66,6 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleApiVisibilityBtn = getElement('toggle-api-visibility');
     const footerModel = getElement('footer-model');
 
+    const postUrlInput = getElement('post-url');
+    const fetchBtn = getElement('fetch-btn');
+    const fetchError = getElement('fetch-error');
+
     const targetText = getElement('target-text');
     const pasteBtn = getElement('paste-btn');
     const clearBtn = getElement('clear-btn');
@@ -150,6 +154,82 @@ document.addEventListener('DOMContentLoaded', () => {
             updateFooterModel();
             showSuccess('設定を保存しました');
             if (settingsPanel) settingsPanel.classList.add('hidden');
+        });
+    }
+
+    // URL fetch: validate input
+    function isValidXUrl(url) {
+        return /^https?:\/\/(x\.com|twitter\.com)\/.+\/status\/\d+/.test(url);
+    }
+
+    if (postUrlInput) {
+        postUrlInput.addEventListener('input', () => {
+            if (fetchBtn) fetchBtn.disabled = !postUrlInput.value.trim();
+            if (fetchError) fetchError.classList.add('hidden');
+        });
+    }
+
+    // URL fetch: load tweet content via oEmbed
+    if (fetchBtn) {
+        fetchBtn.addEventListener('click', async () => {
+            const url = postUrlInput ? postUrlInput.value.trim() : '';
+            if (!url) return;
+
+            if (!isValidXUrl(url)) {
+                if (fetchError) {
+                    fetchError.textContent = 'X（Twitter）のポストURLを入力してください';
+                    fetchError.classList.remove('hidden');
+                }
+                return;
+            }
+
+            const btnText = fetchBtn.querySelector('.text');
+            const spinner = fetchBtn.querySelector('.loader');
+            fetchBtn.disabled = true;
+            if (btnText) btnText.textContent = '読込中...';
+            if (spinner) spinner.classList.remove('hidden');
+            if (fetchError) fetchError.classList.add('hidden');
+
+            try {
+                const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&omit_script=true&lang=ja`;
+                const res = await fetch(oembedUrl);
+
+                if (!res.ok) throw new Error('ポストを取得できませんでした');
+
+                const data = await res.json();
+
+                // Parse HTML to extract text
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.html, 'text/html');
+                const paragraphs = doc.querySelectorAll('p');
+                const texts = Array.from(paragraphs).map(p => p.textContent.trim()).filter(t => t);
+
+                if (texts.length === 0) throw new Error('ポストのテキストを取得できませんでした');
+
+                // Remove last element if it's the attribution (— username)
+                const lastText = texts[texts.length - 1];
+                if (lastText.startsWith('—') || lastText.startsWith('&mdash;')) {
+                    texts.pop();
+                }
+
+                const tweetText = texts.join('\n');
+
+                if (targetText) {
+                    targetText.value = tweetText;
+                    checkGenerateButton();
+                }
+                showSuccess('ポストの内容を読み込みました');
+
+            } catch (err) {
+                if (fetchError) {
+                    fetchError.textContent = err.message || '読み込みに失敗しました';
+                    fetchError.classList.remove('hidden');
+                }
+            } finally {
+                fetchBtn.disabled = false;
+                if (btnText) btnText.textContent = '読み込む';
+                if (spinner) spinner.classList.add('hidden');
+            }
         });
     }
 

@@ -4,6 +4,38 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
+    // PWA: Install Prompt
+    let deferredPrompt = null;
+    const installOverlay = getElement('install-overlay');
+    const installOkBtn = getElement('install-ok');
+    const installCancelBtn = getElement('install-cancel');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Show custom prompt if not dismissed before
+        if (!localStorage.getItem('installDismissed')) {
+            if (installOverlay) installOverlay.classList.remove('hidden');
+        }
+    });
+
+    if (installOkBtn) {
+        installOkBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            if (installOverlay) installOverlay.classList.add('hidden');
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        });
+    }
+
+    if (installCancelBtn) {
+        installCancelBtn.addEventListener('click', () => {
+            if (installOverlay) installOverlay.classList.add('hidden');
+            localStorage.setItem('installDismissed', 'true');
+        });
+    }
+
     // Helper to get element safely
     const getElement = (id) => document.getElementById(id);
 
